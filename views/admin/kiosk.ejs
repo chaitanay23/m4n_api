@@ -1,0 +1,39 @@
+<%- include('../includes/head.ejs') %>
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/product.css">
+</head>
+
+<body>
+   <%- include('../includes/navigation.ejs') %>
+
+    <main>
+        <form class="product-form" action="/admin/add-kioskUser" method="POST">
+            <div class="form-control">
+                <label for="title">Kiosk Name</label>
+                <input type="text" name="name" id="name" >
+            </div>
+          
+            <div class="form-control">
+                <label for="price">Kiosk email</label>
+                <input type="text" name="email" id="email" step="0.01" >
+            </div>
+            <div class="form-control">
+                <label for="price">MobileNumber</label>
+                <input type="number" name="mobileNumber" id="mobileNumber" step="0.01" >
+            </div>
+            <div class="form-control">
+                <label for="price">Password</label>
+                <input type="password" name="password" id="password" step="0.01">
+            </div>
+            <div class="form-control">
+                <label for="price">Confirm Password</label>
+                <input type="password" name="confirmPassword" id="confirmPassword" step="0.01">
+            </div>
+            <% if (editing) { %>
+                <input type="hidden" value="<%= product._id %>" name="productId">
+            <% } %>
+
+            <button class="btn" type="submit">Add Kiosk User</button>
+        </form>
+    </main>
+<%- include('../includes/end.ejs') %></div>

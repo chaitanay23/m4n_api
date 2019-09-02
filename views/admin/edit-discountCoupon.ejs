@@ -1,0 +1,49 @@
+<%- include('../includes/head.ejs') %>
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/product.css">
+</head>
+
+<body>
+   <%- include('../includes/navigation.ejs') %>
+
+    <main>
+        <form class="product-form" action="/admin/add-coupons" method="POST">
+            <div class="form-control">
+                <label for="title">Name</label>
+                <input type="text" name="name" id="name" >
+            </div>
+          
+            <div class="form-control">
+                <label for="price">Discount Amount</label>
+                <input type="text" name="discount_amount" id="discount_amount" step="0.01" >
+            </div>
+            <div class="form-control">
+                <label for="price">Delivery</label>
+                <input type="text" name="delivery_charges" id="delivery_charges" step="0.01" >
+            </div>
+            <div class="form-control">
+                <label for="price">Type</label>
+                <!-- <input type="text" name="type" id="type" step="0.01"> -->
+                <select name="type" id="type">
+                    <option value="promo">Free Nail</option>
+                    <option value="promo">Gallary Purchase</option>
+                    <option value="summer">Summer Discount</option>
+                    <option value="winter">Winter Discount</option>
+                </select>
+            </div>
+            <div class="form-control">
+                <label for="price">Limit Per User</label>
+                <input type="text" name="limit_per_user" id="limit_per_user" step="0.01">
+            </div>
+            <div class="form-control">
+                <label for="price">Description</label>
+                <input type="text" name="description" id="description" step="0.01">
+            </div>
+            <% if (editing) { %>
+                <input type="hidden" value="<%= product._id %>" name="productId">
+            <% } %>
+
+            <button class="btn" type="submit">Add Discount Coupon</button>
+        </form>
+    </main>
+<%- include('../includes/end.ejs') %></div>
