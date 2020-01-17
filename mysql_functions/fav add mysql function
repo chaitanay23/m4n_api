@@ -1,0 +1,24 @@
+DELIMITER
+    //
+    CREATE FUNCTION add_fav(`user_id` INT(11), `item_id` INT(11)) RETURNS JSON
+BEGIN
+    DECLARE
+        fav1 JSON ;
+        DECLARE
+    fav2 JSON ;
+    SELECT
+        fav_item
+   
+    INTO
+        fav1
+    FROM
+        users WHERE
+        id = user_id ;
+        SELECT
+        JSON_ARRAY_APPEND(fav1,'$.items',item_id)
+        into fav2;
+        UPDATE users set fav_item = fav2 WHERE id = user_id;
+        RETURN fav2 ;
+END //
+DELIMITER
+;

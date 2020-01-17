@@ -1,7 +1,7 @@
-const Sequelize = require('sequelize');
-const sequelize = require('../config');
+const Sequelize = require("sequelize");
+const sequelize = require("../config");
 
-const OrderItem = sequelize.define('orderItem', {
+const OrderItem = sequelize.define("orderItem", {
   id: {
     type: Sequelize.INTEGER,
     autoIncrement: true,

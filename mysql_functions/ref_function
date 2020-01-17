@@ -1,0 +1,22 @@
+DELIMITER
+    //
+CREATE FUNCTION gen_ref() RETURNS VARCHAR(15) DETERMINISTIC
+BEGIN
+    DECLARE
+        final_ref VARCHAR(15) ;
+    DECLARE
+    	new_ref varchar(15);
+    DECLARE updated_ref varchar(15);
+    DECLARE
+    	len_ref int(15);
+    select length(reference_num) into len_ref from reference_ids;    
+    SELECT reference_num into new_ref from reference_ids;
+    set new_ref = new_ref+1;
+    SELECT LPAD(new_ref, len_ref, "0") into updated_ref;
+    UPDATE
+        reference_ids
+    SET
+        reference_num = updated_ref ; RETURN updated_ref ;
+END //
+DELIMITER
+;

@@ -1,21 +1,21 @@
-const formidable = require('formidable');
-const Factory = require('../../models/factory-user');
-const jwt = require('../jwt');
+const formidable = require("formidable");
+const Factory = require("../../models/factory-user");
+const jwt = require("../jwt");
 
-module.exports.authenticate = function (req, res) {
+module.exports.authenticate = function(req, res) {
   new formidable.IncomingForm().parse(req, (err, fields) => {
     if (err) {
-      console.error('Error', err)
-      throw err
+      console.error("Error", err);
+      throw err;
     }
 
     const mobile = fields["mobile"];
     const password = fields["password"];
     Factory.findOne({
-        where: {
-          mobileNumber: mobile
-        }
-      })
+      where: {
+        mobileNumber: mobile
+      }
+    })
       .then(factory_user => {
         if (factory_user) {
           const old_password = factory_user.password;
@@ -23,11 +23,14 @@ module.exports.authenticate = function (req, res) {
           decryptedString = cryptr.decrypt(old_password);
           if (password == decryptedString) {
             const token = jwt.jwt_generator(user_id);
-            return res.status(200).header('Authorization', token).json({
-              status: "true",
-              message: "Successfully authenticated",
-              authorization: token
-            });
+            return res
+              .status(200)
+              .header("Authorization", token)
+              .json({
+                status: "true",
+                message: "Successfully authenticated",
+                authorization: token
+              });
           } else {
             return res.status(400).json({
               status: "false",
@@ -46,6 +49,6 @@ module.exports.authenticate = function (req, res) {
           status: "false",
           error: error
         });
-      })
-  })
-}
+      });
+  });
+};

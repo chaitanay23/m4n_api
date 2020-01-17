@@ -1,8 +1,8 @@
-const Sequelize = require('sequelize');
+const Sequelize = require("sequelize");
 
-const sequelize = require('../config');
+const sequelize = require("../config");
 
-const Product = sequelize.define('product', {
+const Product = sequelize.define("product", {
   id: {
     type: Sequelize.INTEGER,
     autoIncrement: true,
@@ -14,13 +14,12 @@ const Product = sequelize.define('product', {
     type: Sequelize.DOUBLE,
     allowNull: false
   },
-  quantity:{
+  quantity: {
     type: Sequelize.INTEGER,
-    allowNull:false
-
+    allowNull: false
   },
-  product_code:Sequelize.STRING,
-  product_type:Sequelize.STRING,
+  product_code: Sequelize.STRING,
+  product_type: Sequelize.STRING,
   imageUrl: {
     type: Sequelize.STRING,
     allowNull: false
@@ -31,7 +30,7 @@ const Product = sequelize.define('product', {
   },
   fav: {
     type: Sequelize.INTEGER,
-    defaultValue:0
+    defaultValue: 0
   }
 });
 

@@ -1,66 +1,91 @@
-const Order = require('../../models/order');
-const Address = require('../../models/address');
-const Product = require('../../models/product');
-const Cart = require('../../models/cart');
-const Cart_item = require('../../models/cart-item');
-const fs = require('fs');
-var pdf = require('html-pdf');
-const formidable = require('formidable');
-const converter = require('number-to-words');
+const Order = require("../../models/order");
+const Address = require("../../models/address");
+const Package = require("../../models/package");
+const Cart = require("../../models/cart");
+const Cart_item = require("../../models/cart-item");
+const fs = require("fs");
+var pdf = require("html-pdf");
+const formidable = require("formidable");
+const converter = require("number-to-words");
 
-exports.generator = (req,res) => {
-    var invoice_no, invoice_date, supply_date, supply_place, party_name, party_address, desc_item, qty, prod_rate, prod_amount, prod_disc, tax_amount, net_payable, del_charges, del_disc, del_tax;
-    new formidable.IncomingForm().parse(req, (err, fields) => {
-        if (err) {
-            console.error('Error', err)
-            throw err
+exports.generator = (req, res) => {
+  var invoice_no,
+    invoice_date,
+    supply_date,
+    supply_place,
+    party_name,
+    party_address,
+    desc_item,
+    qty,
+    prod_rate,
+    prod_amount,
+    prod_disc,
+    tax_amount,
+    net_payable,
+    del_charges,
+    del_disc,
+    del_tax,
+    hsn;
+
+  new formidable.IncomingForm().parse(req, (err, fields) => {
+    if (err) {
+      console.error("Error", err);
+      throw err;
+    }
+
+    var order_id = fields["order_id"];
+    var reference_id = fields["reference_id"];
+
+    Order.findOne({
+      where: {
+        id: order_id,
+        reference_id: reference_id
+      },
+      include: [
+        {
+          model: Address
+        },
+        {
+          model: Cart,
+          include: [
+            {
+              model: Cart_item,
+              include: [
+                {
+                  model: Package
+                }
+              ]
+            }
+          ]
         }
+      ]
+    })
+      .then(order => {
+        if (!order) {
+          res.status(400).json({
+            status: "false",
+            message: "Provide valid order id"
+          });
+        } else {
+          invoice_no = reference_id;
+          invoice_date = order.createdAt.toISOString().split("T")[0];
+          supply_date = invoice_date;
+          supply_place = order.address.city;
+          party_address = order.address.address;
+          party_name = order.address.name;
+          prod_disc = order.discountAmount;
+          tax_amount = order.product_gst_tax;
+          net_payable = order.netPayable;
+          del_charges = order.delivery_charges;
+          del_disc = order.delivery_discount;
+          del_tax = order.delivery_gst_tax;
+          desc_item = order.cart.cartItems[0].package.name;
+          qty = 1;
+          prod_rate = order.cart.cartItems[0].price;
+          prod_amount = order.cart.cartItems[0].price;
+          hsn = 3926099;
 
-        var order_id = fields["order_id"];
-
-        Order.findOne({
-                where: {
-                    id: order_id
-                },
-                include: [{
-                        model: Address
-                    },
-                    {
-                        model: Cart,
-                        include: [{
-                            model: Cart_item,
-                            include: [{
-                                model: Product
-                            }]
-                        }]
-                    }
-                ]
-            })
-            .then(order => {
-                if (!order) {
-                    res.status(400).json({
-                        status: "false",
-                        message: "Provide valid order id"
-                    });
-                } else {
-                    invoice_no = order_id;
-                    invoice_date = order.createdAt;
-                    supply_date = invoice_date;
-                    supply_place = order.address.city;
-                    party_address = order.address.address;
-                    party_name = order.address.name;
-                    prod_disc = order.discountAmount;
-                    tax_amount = order.product_gst_tax;
-                    net_payable = order.netPayable;
-                    del_charges = order.delivery_charges;
-                    del_disc = order.delivery_discount;
-                    del_tax = order.delivery_gst_tax;
-                    desc_item = order.cart.cartItems[0].product.title;
-                    qty = order.cart.cartItems[0].quantity;
-                    prod_rate = order.cart.cartItems[0].product.price;
-                    prod_amount = order.cart.cartItems[0].price;
-
-    var htmlString = `<!DOCTYPE html>
+          var htmlString = `<!DOCTYPE html>
     <html lang="en">
     <head>
       <!-- Required meta tags -->
@@ -203,9 +228,9 @@ exports.generator = (req,res) => {
                   <table>
                     <tr>
                       <td class="title">
-                        <img src="file:///home/troosol/Desktop/candy-ws/controllers/invoice/candy-logo.png" alt="m4n" style="width:70%; max-width:200px;">
+                        <img src="file://${__dirname}/candy-logo.png" alt="m4n" style="width:70%; max-width:200px;">
                       </td>
-          
+    
                       <td style="text-align:left;">
                         <h3>BESMARTY MARKET PLACE PRIVATE LIMITED</h3> 
                         <p>K-20, LAJPAT NAGAR - II, NEW DELHI -110024
@@ -223,7 +248,7 @@ exports.generator = (req,res) => {
                     <tr>
                       <td>
                         <b>GST No</b> : <b>07AAGCB2654J1ZM</b><br>
-                        <b>Invoice No</b> :  SNG-BS-DL-${invoice_no}<br>
+                        <b>Invoice No</b> :  ${invoice_no}<br>
                         <b>Invoice Date</b> : ${invoice_date}
                       </td>
           
@@ -264,31 +289,31 @@ exports.generator = (req,res) => {
 
             <table>
                 <tr class="table-list">
+                <th style="border-left: 1px solid #000;   text-align: center;"></th>
                 <th style="  text-align: center;"></th>
                 <th style="  text-align: center;"></th>
                 <th style="  text-align: center;"></th>
                 <th style="  text-align: center;"></th>
                 <th style="  text-align: center;"></th>
-                <th style="  text-align: center;"></th>
-                <th style="  text-align: center;"></th>
+                
                 <th style="border-right: 1px solid #000;  text-align: center;"></th>
                 <th style="  text-align: center;"></th>         
-                <th style="border-right: 1px solid #000;  text-align: center; ">
-                    CGST
+                <th style="  text-align: center; ">
+                    
                 </th>
                 <th style="  text-align: center;"></th>
           
-                <th style="border-right: 1px solid #000; text-align: center;">
-                  SGST
+                <th style=" text-align: center;">
+                  GST
                 </th>
                 <th style="  text-align: center;"></th>
           
                 <th style="border-right: 1px solid #000;  text-align: center;">
-                    IGST
+                    
                 </th>
               </tr>
               <tr class="table-list">
-                    <th colspan="1" style="border-right:1px solid #000; text-align: center;"> 
+                    <th colspan="1" style="border-right:1px solid #000;border-left: 1px solid #000;  text-align: center;"> 
                      S.no.
                     </th>
               
@@ -303,9 +328,7 @@ exports.generator = (req,res) => {
                     <th style="border-right:1px solid #000; text-align: center;">
                         QTY
                     </th>
-                    <th style="border-right:1px solid #000; text-align: center;">
-                        Unit
-                    </th>
+                    
                     <th style="border-right:1px solid #000; text-align: center;">
                         Rate
                     </th>
@@ -316,29 +339,29 @@ exports.generator = (req,res) => {
                         Disc
                     </th>
 
-                    <th style="border-right:1px solid #000; text-align: center;">
+                    <th style=" text-align: center;">
+                        
+                    </th> <th style=" text-align: center;">
                         Rate
-                    </th> <th style="border-right:1px solid #000; text-align: center;">
-                        Amount
                     </th>
 
                     <th style="border-right:1px solid #000; text-align: center;">
-                        Rate
+                        
                     </th>
-                    <th style="border-right:1px solid #000; text-align: center;">
-                        Amount
+                    <th style=" text-align: center;">
+                        
                     </th>
 
-                    <th style="border-right:1px solid #000; text-align: center;">
-                        Rate
+                    <th style=" text-align: center;">
+                        Amount
                     </th>
                     <th style="border-right:1px solid #000; text-align: center;"">
-                        Amount
+                        
                     </th>
                   </tr>
 
                   <tr class="table-list">
-                    <td colspan="1" style="border-right:1px solid #000; text-align: center;"> 
+                    <td colspan="1" style="border-right:1px solid #000;border-left: 1px solid #000;  text-align: center;"> 
                      1
                     </td>
               
@@ -347,14 +370,12 @@ exports.generator = (req,res) => {
                     </td>
               
                     <td style="border-right:1px solid #000; text-align: center;">
-                       Not Applicable
+                       ${hsn}
                     </td>
                     <td style="border-right:1px solid #000; text-align: center;">
                         ${qty}
                     </td>
-                    <td style="border-right:1px solid #000; text-align: center;">
-                        Not Applicable
-                    </td>
+                    
                     <td style="border-right:1px solid #000; text-align: center;">
                         ${prod_rate}
                     </td>
@@ -365,20 +386,20 @@ exports.generator = (req,res) => {
                     
                     </td>
 
-                    <td style="border-right:1px solid #000; text-align: center;">
+                    <td style=" text-align: center;">
                         
-                    </td> <td style="border-right:1px solid #000; text-align: center;">
-                        
-                    </td>
-
-                    <td style="border-right:1px solid #000; text-align: center;">
-                        
-                    </td>
-                    <td style="border-right:1px solid #000; text-align: center;">
+                    </td> <td style=" text-align: center;">
                         
                     </td>
 
                     <td style="border-right:1px solid #000; text-align: center;">
+                        
+                    </td>
+                    <td style=" text-align: center;">
+                        
+                    </td>
+
+                    <td style=" text-align: center;">
                         
                     </td>
                     <td style="border-right:1px solid #000; text-align: center;"">
@@ -387,12 +408,12 @@ exports.generator = (req,res) => {
                   </tr>
                   <!--SplitHere-->
                   <tr class="table-list">
-                    <td colspan="1" style=" text-align: center;"> 
+                    <td colspan="1" style=" text-align: center;border-left: 1px solid #000; "> 
                      
                     </td>
               
                     <td style=" text-align: center;">
-                       Product Discount
+                       
                     </td>
               
                     <td style=" text-align: center;">
@@ -401,14 +422,14 @@ exports.generator = (req,res) => {
                     <td style=" text-align: center;">
                         
                     </td>
-                    <td style=" text-align: center;">
-                        
-                    </td>
-                    <td style=" text-align: center;">
-                        
-                    </td>
                     <td style="border-right:1px solid #000; text-align: center;">
                     
+                    </td>
+                   
+                    <td style="border-right:1px solid #000; text-align: center;">
+                    ${
+                      order.cart.totalPrice
+                    } <small><strong>(inc. GST)</strong><small>
                     </td>
                     <td style="border-right:1px solid #000; text-align: center;">
                     ${prod_disc}
@@ -417,18 +438,18 @@ exports.generator = (req,res) => {
                     <td style=" text-align: center;">
                         
                     </td> <td style=" text-align: center;">
+                    18%
+                    </td>
+
+                    <td style="border-right:1px solid #000; text-align: center;">
                         
+                    </td>
+                    <td style=" text-align: center;">
+                    
                     </td>
 
                     <td style=" text-align: center;">
-                        
-                    </td>
-                    <td style=" text-align: center;">
-                        
-                    </td>
-
-                    <td style=" text-align: center;">
-                        
+                    ${tax_amount}
                     </td>
                     <td style="border-right:1px solid #000; text-align: center;"">
                         
@@ -439,17 +460,11 @@ exports.generator = (req,res) => {
             <tr class="total">
             <td colspan="4"></td>              
             <td colspan="4">
-              <strong>Delivery Charges:</strong> ${del_charges}
+              <b>Delivery Charges:</b>
+               ${del_charges}
             </td>
             <td colspan="4"></td>
           </tr>
-          <tr class="total">
-            <td colspan="4"></td>              
-            <td colspan="4">
-                <strong>Delivery Discount:</strong> ${del_disc}
-            </td>
-            <td colspan="4"></td>
-        </tr>
 
         <tr class="total">
             <td colspan="4"></td>              
@@ -463,7 +478,7 @@ exports.generator = (req,res) => {
                     <td colspan="4">
                     </td>
                     <td colspan="4">
-                    <strong>Product Tax Amount:</strong> ${tax_amount} 
+                    
                       </td>
                       <td colspan="4"></td>
                   </tr>
@@ -481,7 +496,9 @@ exports.generator = (req,res) => {
                     <td colspan="4"></td>
                   </tr>
                   <tr class="total">
-                  <td><b>Amount in Words: </b><strong>Rs. ${converter.toWords(net_payable).toUpperCase()}</strong> Only</td>
+                  <td><b>Amount in Words: </b><strong>Rs. ${converter
+                    .toWords(net_payable)
+                    .toUpperCase()}</strong> Only</td>
                 </tr>
                 <tr class="total">
                     <td><b>Certified that the Particulars given above are true and correct</b></td>
@@ -490,22 +507,28 @@ exports.generator = (req,res) => {
             <hr>
             <table>
                 <tbody>
-                    <br>
                     <tr class="total">
                         <td>
                         <b>Terms & Conditions</b></td>
                         </tr>
                         <tr>
-                                <td>1 All Payments Should be Made Direct to The Company or its</td>
+                                <td style="font-size:6px;">These terms and conditions along with your Invoice constitute the entire contract between you &amp; BESMARTY
+                                TECHNOLOGIES PRIVATE LIMITED.<br>Goods once sold shall not be exchanged, replaced or taken back.<br>BESMARTY does not follow a replacement policy, DOA products shall be governed by the policies of respective
+                                brands and replacement (if any) shall be made at the sole discretion of the respective brand. We will only help to
+                                facilitate the process. Please contact your nearest store for more details.<br>BESMARTY bears no liability for any defect and / or deficiency in the Products and / or Services Sold. For any
+                                Product defect and / or deficiency in services, buyer to contact the Manufacturer and / or the Service Provider.<br>The buyer acknowledges that the product(s) / service(s) purchased under this invoice are not for re-sale.<br>The risk of loss or destruction of, or damage to, the product shall pass onto you after the delivery of the product
+                                to you. 7.Prices prevailing at the time of delivery shall be applicable.<br>Payments made by the way of credit card are acceptable, subject to realization of payment by Bank.<br>
+                                Any or all grievances / disputes shall be exclusively subjected to the Jurisdiction of Courts at Delhi / New
+                                Delhi.<br>Free gifts shall not be exchanged or covered under any kind of waranty</td>
                         </tr>
                         <tr>
-                                <td>Authorised Representive by Cheque / NEFT / RTGS / DD Only.</td>
-                                <td>For BESMARTY MARKETPLACE PRIVATE LIMITED</td>
+                        <td></td>
+                          <td>For BESMARTY MARKETPLACE PRIVATE LIMITED</td>
                                
                         </tr>
                         <tr style="height:70px"></tr>
                         <tr>
-                            <td></td>
+                            <td><b>This is computer generated Invoice not required Signature.</b></td>
                             <td><b>Authorised Signatory</b></td>
                         </tr>
     
@@ -513,17 +536,17 @@ exports.generator = (req,res) => {
             </table>
           </div>
     </body>
-    </html>`
+    </html>`;
 
-    if(order.cart.cartItems.length>1){
-      for(var i=1;i<order.cart.cartItems.length;i++){
-                    desc_item = order.cart.cartItems[i].product.title;
-                    qty = order.cart.cartItems[i].quantity;
-                    prod_rate = order.cart.cartItems[i].product.price;
-                    prod_amount = order.cart.cartItems[i].price
-                    let splitString = `<tr class="table-list">
-        <td colspan="1" style="border-right:1px solid #000; text-align: center;"> 
-         ${i+1}
+          if (order.cart.cartItems.length > 1) {
+            for (var i = 1; i < order.cart.cartItems.length; i++) {
+              desc_item = order.cart.cartItems[i].package.name;
+              qty = 1;
+              prod_rate = order.cart.cartItems[i].price;
+              prod_amount = order.cart.cartItems[i].price;
+              let splitString = `<tr class="table-list">
+        <td colspan="1" style="border-right:1px solid #000;border-left: 1px solid #000;  text-align: center;"> 
+         ${i + 1}
         </td>
   
         <td style="border-right:1px solid #000; text-align: center;">
@@ -531,14 +554,12 @@ exports.generator = (req,res) => {
         </td>
   
         <td style="border-right:1px solid #000; text-align: center;">
-           Not Applicable
+           ${hsn}
         </td>
         <td style="border-right:1px solid #000; text-align: center;">
             ${qty}
         </td>
-        <td style="border-right:1px solid #000; text-align: center;">
-            Not Applicable
-        </td>
+        
         <td style="border-right:1px solid #000; text-align: center;">
             ${prod_rate}
         </td>
@@ -549,66 +570,92 @@ exports.generator = (req,res) => {
        
         </td>
 
-        <td style="border-right:1px solid #000; text-align: center;">
-            
-        </td> <td style="border-right:1px solid #000; text-align: center;">
-            
-        </td>
-
-        <td style="border-right:1px solid #000; text-align: center;">
-            
-        </td>
-        <td style="border-right:1px solid #000; text-align: center;">
+        <td style=" text-align: center;">
+                        
+        </td> <td style=" text-align: center;">
             
         </td>
 
         <td style="border-right:1px solid #000; text-align: center;">
+            
+        </td>
+        <td style=" text-align: center;">
+            
+        </td>
+
+        <td style=" text-align: center;">
             
         </td>
         <td style="border-right:1px solid #000; text-align: center;"">
             
         </td>
       </tr>`;
-      let spl = htmlString.split("<!--SplitHere-->");
-      htmlString = spl[0] + splitString + "<!--SplitHere-->" + spl[1];
-      }
-    }
+              let spl = htmlString.split("<!--SplitHere-->");
+              htmlString = spl[0] + splitString + "<!--SplitHere-->" + spl[1];
+            }
+          }
 
-    
-   
-    fs.writeFileSync(__dirname + "/test.html",htmlString,(err)=>{
-        if(err){
-            throw err;
-        }
-    });
+          fs.writeFileSync(
+            __dirname + "/invoice_" + invoice_no + ".html",
+            htmlString,
+            err => {
+              if (err) {
+                throw err;
+              }
+            }
+          );
 
-    var html = fs.readFileSync(__dirname + '/test.html', 'utf8');
-    var options = { 
-                  format: 'Legal',
-                  "border": {
-                    "top": "0.1in",            
-                    "right": "0.2in",
-                    "bottom": "0.1in",
-                    "left": "0.2in"
-                  }
-  };
+          var html = fs.readFileSync(
+            __dirname + "/invoice_" + invoice_no + ".html",
+            "utf8"
+          );
+          var options = {
+            format: "Legal",
+            border: {
+              top: "0.1in",
+              right: "0.2in",
+              bottom: "0.1in",
+              left: "0.2in"
+            }
+          };
 
-    pdf.create(html,options).toFile(__dirname + '/test.pdf', function(err, resp) {
-                if (err) return console.log(err);
-                else{
-                  console.log("PDF Generated: ",resp); 
+          function createPDF() {
+            return new Promise((resolve, reject) => {
+              pdf.create(html, options).toBuffer(function(err, Buffer) {
+                if (err) reject(err);
+                else {
+                  resolve(Buffer);
                 }
-                
+              });
             });
-            
+          }
 
-    res.sendFile(__dirname +'/test.pdf')
-                }
+          createPDF()
+            .then(Buffer => {
+              fs.unlink(__dirname + "/invoice_" + invoice_no + ".html", err => {
+                if (err) throw err;
+              });
+              res.set({
+                "Content-Disposition":
+                  "attachment; filename=invoice_" + invoice_no + ".pdf",
+                "Content-Type": "application/pdf; charset=utf-8"
+              });
+              res.write(Buffer);
+              res.end();
             })
-            .catch(err=>{
-                console.log(err)
-            })
-    })
-
-}
-
+            .catch(err =>
+              res.json({
+                status: "false",
+                message: "Invoice could not be generated"
+              })
+            );
+        }
+      })
+      .catch(err =>
+        res.json({
+          status: "false",
+          message: "Please provide Order Id"
+        })
+      );
+  });
+};

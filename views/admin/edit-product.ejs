@@ -1,13 +1,14 @@
 <%- include('../includes/head.ejs') %>
-    <link rel="stylesheet" href="/css/forms.css">
-    <link rel="stylesheet" href="/css/product.css">
+<link rel="stylesheet" href="/css/forms.css">
+<link rel="stylesheet" href="/css/product.css">
 </head>
 
 <body>
-   <%- include('../includes/navigation.ejs') %>
+    <%- include('../includes/navigation.ejs') %>
 
     <main>
-        <form class="product-form" action="/admin/<% if (editing) { %>edit-product<% } else { %>add-product<% } %>" method="POST" enctype="multipart/form-data">
+        <form class="product-form" action="/admin/<% if (editing) { %>edit-product<% } else { %>add-product<% } %>"
+            method="POST" enctype="multipart/form-data">
             <div class="form-control">
                 <label for="title">Title</label>
                 <input type="text" name="title" id="title" value="<% if (editing) { %><%= product.title %><% } %>">
@@ -19,6 +20,7 @@
                     <option value="nail_set">Nail Set</option>
                     <option value="free_nail">Free Nail</option>
                     <option value="nail">Nail</option>
+                    <option value="accessories">Accessories</option>
                     <option value="jewellery">Jewellery</option>
                     <option value="glitter">Glitter</option>
                     <option value="sticker">Sticker</option>
@@ -31,29 +33,34 @@
             </div> -->
             <div class="form-control">
                 <label for="imageUrl">Image</label>
-                <input type="file" name="imageUrl" id="imageUrl"  >
+                <input type="file" name="imageUrl" id="imageUrl">
             </div>
             <div class="form-control">
                 <label for="price">Price</label>
-                <input type="number" name="price" id="price" step="0.01" value="<% if (editing) { %><%= product.price %><% } %>">
+                <input type="number" name="price" id="price" step="0.01"
+                    value="<% if (editing) { %><%= product.price %><% } %>">
             </div>
             <div class="form-control">
                 <label for="price">Quantity</label>
-                <input type="number" name="quantity" id="quantity" step="0.01" value="<% if (editing) { %><%= product.quantity %><% } %>">
+                <input type="number" name="quantity" id="quantity" step="0.01"
+                    value="<% if (editing) { %><%= product.quantity %><% } %>">
             </div>
             <div class="form-control">
                 <label for="price">Product_code</label>
-                <input type="text" name="product_code" id="product_code" step="0.01" value="<% if (editing) { %><%= product.product_code %><% } %>">
+                <input type="text" name="product_code" id="product_code" step="0.01"
+                    value="<% if (editing) { %><%= product.product_code %><% } %>">
             </div>
             <div class="form-control">
                 <label for="description">Description</label>
-                <textarea name="description" id="description" rows="5"><% if (editing) { %><%= product.description %><% } %></textarea>
+                <textarea name="description" id="description"
+                    rows="5"><% if (editing) { %><%= product.description %><% } %></textarea>
             </div>
             <% if (editing) { %>
-                <input type="hidden" value="<%= product._id %>" name="productId">
+            <input type="hidden" value="<%= product._id %>" name="productId">
             <% } %>
 
-            <button class="btn" type="submit"><% if (editing) { %>Update Product<% } else { %>Add Product<% } %></button>
+            <button class="btn" type="submit"><% if (editing) { %>Update Product<% } else { %>Add
+                Product<% } %></button>
         </form>
     </main>
-<%- include('../includes/end.ejs') %>
+    <%- include('../includes/end.ejs') %>

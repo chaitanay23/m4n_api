@@ -1,0 +1,28 @@
+DELIMITER
+    //
+CREATE FUNCTION gen_awb(prefix varchar(5)) RETURNS VARCHAR(15)
+BEGIN
+    DECLARE
+        final_awb VARCHAR(15) ;
+    DECLARE
+    	new_awb varchar(15);
+    DECLARE updated_awb varchar(15);
+    DECLARE
+    	len_awb int(15);
+    select length(awb_number) into len_awb from awb_numbers;    
+    SELECT awb_number into new_awb from awb_numbers;
+    set new_awb = new_awb+1;
+    SELECT LPAD(new_awb, len_awb, "0") into updated_awb;
+    UPDATE
+        awb_numbers
+    SET
+        awb_number = updated_awb ;
+    SELECT
+        CONCAT(prefix, awb_number)
+    INTO
+        final_awb
+    FROM
+        awb_numbers ; RETURN final_awb ;
+END //
+DELIMITER
+;

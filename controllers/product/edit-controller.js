@@ -30,7 +30,7 @@
 //                         else console.log('Successfully moved');
 //                     });
 //                     db_path = new_path.slice(1,new_path.length);
-                    
+
 //                     return (db_path);
 //                 }
 //             }

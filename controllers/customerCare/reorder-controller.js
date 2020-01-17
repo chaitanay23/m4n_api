@@ -1,249 +1,272 @@
-const formidable = require('formidable');
-const Order = require('../../models/order');
-const Address = require('../../models/address');
-const Store = require('../../models/store');
-const Product = require('../../models/product');
-const Cart = require('../../models/cart');
-const Cart_item = require('../../models/cart-item');
-const jwt = require('../jwt');
-const redis = require('../redis');
-const Sequelize = require('sequelize');
-const Op = Sequelize.Op;
+const formidable = require("formidable");
+const Order = require("../../models/order");
+const Cart = require("../../models/cart");
+const Cart_item = require("../../models/cart-item");
+const jwt = require("../jwt");
+const redis = require("../redis");
+const sequelize = require("sequelize");
+const Awb = require("../../models/awb_number");
+const ENV = require("../../env");
+const prefix = ENV.PREFIX;
+const ref_gen = require("../reference-creator");
+const Design = require("../../models/design-image");
+const delhivery = require("../../delhivery/assign_wayBill");
 
 exports.process_reorder = (req, res) => {
-    redis.authenticateToken(req.headers.authorization, (result) => {
-        if (result == false) {
+  redis.authenticateToken(req.headers.authorization, result => {
+    if (result == false) {
+      const jwt_result = jwt.jwt_verify(req.headers.authorization);
 
-            const jwt_result = jwt.jwt_verify(req.headers.authorization);
+      if (jwt_result && jwt_result != undefined) {
+        new formidable.IncomingForm().parse(req, async (err, fields, files) => {
+          if (err) {
+            return res.status(500).json({
+              status: "false",
+              message: "Error",
+              error: err
+            });
+          }
 
-            if (jwt_result && jwt_result != undefined) {
-                new formidable.IncomingForm().parse(req, async (err, fields, files) => {
-                    if (err) {
-                        return res.status(500).json({
-                            status: "false",
-                            message: "Error",
-                            error: err
-                        });
-                    }
+          const user_id = fields["user_id"];
+          const cart_item_id = fields["cart_item_id"];
+          const order_id = fields["order_id"];
+          const reference_id = fields["reference_id"];
+          const package_id = fields["package_id"];
+          let [lf1, lf2, lf3, lf4, lf5, rf1, rf2, rf3, rf4, rf5] = [
+            fields["lf1"],
+            fields["lf2"],
+            fields["lf3"],
+            fields["lf4"],
+            fields["lf5"],
+            fields["rf1"],
+            fields["rf2"],
+            fields["rf3"],
+            fields["rf4"],
+            fields["rf5"]
+          ];
+          if (!user_id && !cart_item_id) {
+            return res.status(400).json({
+              status: "false",
+              message: "Please provide complete data"
+            });
+          }
+          lf1 != null ? (lf1 = lf1.split(",").map(Number)) : (lf1 = [null]);
+          lf2 != null ? (lf2 = lf2.split(",").map(Number)) : (lf2 = [null]);
+          lf3 != null ? (lf3 = lf3.split(",").map(Number)) : (lf3 = [null]);
+          lf4 != null ? (lf4 = lf4.split(",").map(Number)) : (lf4 = [null]);
+          lf5 != null ? (lf5 = lf5.split(",").map(Number)) : (lf5 = [null]);
+          rf1 != null ? (rf1 = rf1.split(",").map(Number)) : (rf1 = [null]);
+          rf2 != null ? (rf2 = rf2.split(",").map(Number)) : (rf2 = [null]);
+          rf3 != null ? (rf3 = rf3.split(",").map(Number)) : (rf3 = [null]);
+          rf4 != null ? (rf4 = rf4.split(",").map(Number)) : (rf4 = [null]);
+          rf5 != null ? (rf5 = rf5.split(",").map(Number)) : (rf5 = [null]);
 
-                    const user_id = fields["user_id"];
-                    const order_id = fields["order_id"];
-                    var lf1 = fields['L1'];
-                    var lf2 = fields['L2'];
-                    var lf3 = fields['L3'];
-                    var lf4 = fields['L4']; //1st finger index finger
-                    var lf5 = fields['LT']; //thumb left
-                    var rf1 = fields['R1'];
-                    var rf2 = fields['R2'];
-                    var rf3 = fields['R3'];
-                    var rf4 = fields['R4']; //last finger
-                    var rf5 = fields['RT']; //thumb right
-                    var product_attribute = ['id', 'title', 'product_code', 'product_type', 'imageUrl', 'fav', 'description'];
-                    var data = [lf1,lf2,lf3,lf4,lf5,rf1,rf2,rf3,rf4,rf5];
-                    var fingers = data.filter(ele=>{
-                        return ele !== undefined
-                    });
-                    let new_cart = null;
-                    
-                    if(!user_id && !order_id)
-                    {
-                        return res.status(400).json({
-                            status:"false",
-                            message:"Please provide user id and order id"
-                        });
-                    }
-                    Order.findOne({
-                            where: {
-                                id: order_id,
-                                userId: user_id,
-                                orderId:{[Op.eq]:null}
-                            }
-                        })
-                        .then(check_order => {
-                            if (!check_order) {
-                                return res.status(400).json({
+          let totalItems = [
+            ...lf1,
+            ...lf2,
+            ...lf3,
+            ...lf4,
+            ...lf5,
+            ...rf1,
+            ...rf2,
+            ...rf3,
+            ...rf4,
+            ...rf5
+          ].filter(num => num != null);
+
+          Order.findOne({
+            where: {
+              id: order_id,
+              reference_id
+            }
+          })
+            .then(order => {
+              if (order.reorder == "no") {
+                if (
+                  (lf1 ||
+                    lf2 ||
+                    lf3 ||
+                    lf4 ||
+                    lf5 ||
+                    rf1 ||
+                    rf2 ||
+                    rf3 ||
+                    rf4 ||
+                    rf5) != null
+                ) {
+                  Cart.create({
+                    status: 0,
+                    totalPrice: 0,
+                    totalPackage: 1,
+                    totalItems: totalItems.length,
+                    userId: user_id
+                  })
+                    .then(cart => {
+                      Cart_item.create({
+                        lf1,
+                        lf2,
+                        lf3,
+                        lf4,
+                        lf5,
+                        rf1,
+                        rf2,
+                        rf3,
+                        rf4,
+                        rf5,
+                        price: 0,
+                        cartId: cart.id,
+                        packageId: package_id
+                      })
+                        .then(cart_item => {
+                          Design.findOne({
+                            where: { cartItemId: cart_item_id }
+                          })
+                            .then(design_image => {
+                              if (design_image) {
+                                Design.create({
+                                  lf1: design_image.lf1,
+                                  lf2: design_image.lf2,
+                                  lf3: design_image.lf3,
+                                  lf4: design_image.lf4,
+                                  lf5: design_image.lf5,
+                                  rf1: design_image.rf1,
+                                  rf2: design_image.rf2,
+                                  rf3: design_image.rf3,
+                                  rf4: design_image.rf4,
+                                  rf5: design_image.rf5,
+                                  userId: user_id,
+                                  cartItemId: cart_item.id
+                                }).catch(err => {
+                                  res.json({
                                     status: "false",
-                                    message: "Re-order not applicable"
+                                    err,
+                                    message: "Failed"
+                                  });
                                 });
-                            } else {
-                                Order.findAndCountAll({
-                                        where: {
-                                            orderId: check_order.id
-                                        }
+                              }
+
+                              ref_gen.reference(ref_id => {
+                                let reference_id = ref_id;
+
+                                delhivery.assign_waybill
+                                  .then(awb_number => {
+                                    Order.create({
+                                      reference_id,
+                                      totalPrice: 0,
+                                      totalQuantity: 1,
+                                      product_gst_tax: 0,
+                                      delivery_gst_tax: 0,
+                                      status: "Re-order placed",
+                                      internalStatus: "reorder",
+                                      discountAmount: 0,
+                                      netPayable: 0,
+                                      delivery_charges: 0,
+                                      awb_number: awb_number.data,
+                                      userId: user_id,
+                                      addressId: order.addressId,
+                                      cartId: cart.id,
+                                      fingerSizeId: order.fingerSizeId,
+                                      orderId: order_id
                                     })
-                                    .then(already_reorder => {
-                                        if (already_reorder.count > 0) {
-                                            return res.status(400).json({
-                                                status: "false",
-                                                message: "Re-order already taken for this order"
-                                            });
-                                        } else {
-                                            if (check_order.totalPrice <= 0) {
-                                                return res.status(400).json({
-                                                    status: "false",
-                                                    message: "Re-order for this order is not possible"
-                                                });
-                                            } else {
-                                                Order.findOne({
-                                                    where:{id:check_order.id},
-                                                    include:[
-                                                        {
-                                                            model: Cart,
-                                                            include: [{
-                                                                model: Cart_item,
-                                                                include: [{
-                                                                    model: Product,
-                                                                    attributes: product_attribute
-                                                                }]
-                                                            }]
-                                                        }
-                                                    ]
-                                                })
-                                                .then(async order_detail =>{
-                                                    await Cart.create({
-                                                        userId:user_id,
-                                                        status:0
-                                                    })
-                                                    .then(reorder_cart=>{
-                                                        if(!reorder_cart)
-                                                        {
-                                                            return res.status(400).json({
-                                                                status:"false",
-                                                                message:"Failed to create cart"
-                                                            });
-                                                        }
-                                                        else{
-                                                            new_cart = reorder_cart.id;
-                                                            order_detail.cart.cartItems.forEach(item => {
-                                                                if(!item)
-                                                                {
-                                                                    return res.status(204).json({
-                                                                        status:"false",
-                                                                        message:"No items found"
-                                                                    });
-                                                                }
-                                                                else{
-                                                                    fingers.forEach(finger => {
-                                                                        Cart_item.create({
-                                                                            quantity:item.quantity,
-                                                                            finger_id:finger,
-                                                                            price:0,
-                                                                            cartId:reorder_cart.id,
-                                                                            productId:item.productId
-                                                                        })
-                                                                        .then(reorder_cart_item =>{
-                                                                            if(!reorder_cart_item)
-                                                                            {
-                                                                                return res.status(400).json({
-                                                                                    status:"false",
-                                                                                    message:"Failed to create cart items"
-                                                                                });
-                                                                            }
-                                                                        })
-                                                                        .catch(err => {
-                                                                            return res.status(400).json({
-                                                                                status: "false",
-                                                                                error: err,
-                                                                                message: "Failure1"
-                                                                            });
-                                                                        });
-                                                                    });
-                                                                }
-                                                            });
-                                                        }
-                                                    })
-                                                    .catch(err => {
-                                                        return res.status(400).json({
-                                                            status: "false",
-                                                            error: err,
-                                                            message: "Failure2"
-                                                        });
-                                                    });
-                                                    console.table([new_cart]);
-                                                    await Order.create({
-                                                        totalPrice:0,
-                                                        totalQuantity:order_detail.totalQuantity,
-                                                        product_gst_tax:0,
-                                                        delivery_gst_tax:0,
-                                                        status:"Re-order placed",
-                                                        internalStatus:"reorder",
-                                                        discountAmount:0,
-                                                        netPayable:0,
-                                                        delivery_charges:0,
-                                                        delivery_discount:0,
-                                                        userId:order_detail.userId,
-                                                        addressId:order_detail.addressId,
-                                                        storeId:order_detail.storeId,
-                                                        cartId:new_cart,
-                                                        handImageId:order_detail.handImageId,
-                                                        designImageId:order_detail.designImageId,
-                                                        fingerSizeId:order_detail.fingerSizeId,
-                                                        kioskUserId:order_detail.kioskUserId,
-                                                        paymentId:order_detail.paymentId,
-                                                        orderId:order_id
-                                                    })
-                                                    .then(re_order=>{
-                                                        if(!re_order)
-                                                        {
-                                                            return res.status(500).json({
-                                                                status:"false",
-                                                                message:"Failed to process re_order"
-                                                            });
-                                                        }
-                                                        else{
-                                                            return res.status(200).json({
-                                                                status:"true",
-                                                                message:"order placed",
-                                                                order_id:re_order.id
-                                                            });
-                                                        }
-                                                    })
-                                                    .catch(err => {
-                                                        return res.status(400).json({
-                                                            status: "false",
-                                                            error: err,
-                                                            message: "Failure"
-                                                        });
-                                                    });
-                                                })
-                                                .catch(err => {
-                                                    return res.status(400).json({
-                                                        status: "false",
-                                                        error: err,
-                                                        message: "Failure"
-                                                    });
-                                                });
+                                      .then(new_reorder => {
+                                        Order.update(
+                                          {
+                                            reorder: "yes"
+                                          },
+                                          {
+                                            where: {
+                                              id: order_id
                                             }
-                                        }
-                                    })
-                                    .catch(err => {
-                                        return res.status(400).json({
-                                            status: "false",
-                                            error: err,
-                                            message: "Failure"
+                                          }
+                                        )
+                                          .then(success =>
+                                            res.json({
+                                              status: "true",
+                                              message: "Re-order placed",
+                                              order_details: new_reorder
+                                            })
+                                          )
+                                          .catch(err =>
+                                            res.json({
+                                              status: "false",
+                                              err,
+                                              message:
+                                                "Order could not be updated"
+                                            })
+                                          );
+                                      })
+                                      .catch(err => {
+                                        res.json({
+                                          status: "false",
+                                          err,
+                                          message: "Order failed"
                                         });
+                                      });
+                                  })
+                                  .catch(err => {
+                                    res.json({
+                                      status: "false",
+                                      err,
+                                      message: "AWB not generated"
                                     });
-                            }
+                                  });
+                              });
+                            })
+                            .catch(err => {
+                              res.json({
+                                status: "false",
+                                err,
+                                message: "Failed"
+                              });
+                            });
                         })
                         .catch(err => {
-                            return res.status(400).json({
-                                status: "false",
-                                error: err,
-                                message: "Failure"
-                            });
+                          res.json({
+                            status: "false",
+                            err,
+                            message: "Items could not be added"
+                          });
                         });
-                });
-            } else {
-                return res.status(400).json({
+                    })
+                    .catch(err => {
+                      res.json({
+                        status: "false",
+                        err,
+                        message: "Cart couldn't be created"
+                      });
+                    });
+                } else {
+                  res.json({
                     status: "false",
-                    message: "Token not verified"
+                    message: "Provide finger details"
+                  });
+                }
+              } else {
+                res.json({
+                  status: "false",
+                  message: "Reorder already done earlier"
                 });
-            }
-        } else {
-            return res.status(400).json({
+              }
+            })
+            .catch(err =>
+              res.json({
                 status: "false",
-                message: "User not Logged In"
-            });
-        }
-    });
-}
+                err,
+                message: "Invalid Order"
+              })
+            );
+        });
+      } else {
+        return res.status(400).json({
+          status: "false",
+          message: "Token not verified"
+        });
+      }
+    } else {
+      return res.status(400).json({
+        status: "false",
+        message: "User not Logged In"
+      });
+    }
+  });
+};
