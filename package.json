@@ -38,7 +38,7 @@
     "mysql2": "^1.6.5",
     "node-fetch": "^2.6.0",
     "nodemon": "^1.19.0",
-    "npm": "^6.13.0",
+    "npm": "^6.13.4",
     "number-to-words": "^1.2.4",
     "pdf-merge": "^1.2.0",
     "pdfkit": "^0.10.0",
