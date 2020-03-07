@@ -13,6 +13,10 @@ const Package = sequelize.define("package", {
     type: Sequelize.STRING,
     allowNull: false
   },
+  display_price: {
+    type: Sequelize.INTEGER,
+    allowNull: false
+  },
   price: {
     type: Sequelize.INTEGER,
     allowNull: false
@@ -52,6 +56,15 @@ const Package = sequelize.define("package", {
     type: Sequelize.STRING
   },
   cta_text: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    defaultValue: ""
+  },
+  isCustomizable: {
+    type: Sequelize.STRING,
+    defaultValue: "true"
+  },
+  display_price: {
     type: Sequelize.STRING,
     allowNull: false,
     defaultValue: ""

@@ -3,8 +3,10 @@ const Order = require("../models/order");
 const Cart = require("../models/cart");
 const Cart_item = require("../models/cart-item");
 const Op = require("sequelize").Op;
+const Package = require("../models/package");
+const Coupon_package = require("../models/couponPackage");
 
-exports.discountCal = (coupon_id, user_id, cart_id, callback) => {
+exports.discountCal = (coupon_id, user_id, package_list, cart_id, callback) => {
   if (!coupon_id) {
     return callback({
       discount: 0,
@@ -24,7 +26,23 @@ exports.discountCal = (coupon_id, user_id, cart_id, callback) => {
         }
       ],
       flag: 1
-    }
+    },
+    include: [
+      {
+        model: Package,
+        required: true,
+        attributes: ["id"],
+        through: {
+          model: Coupon_package,
+          where: {
+            packageId: {
+              [Op.in]: package_list
+            }
+          },
+          attributes: ["id"]
+        }
+      }
+    ]
   }).then(coupon_detail => {
     if (!coupon_detail) {
       return callback({
@@ -47,6 +65,9 @@ exports.discountCal = (coupon_id, user_id, cart_id, callback) => {
         couponId: coupon_detail.id,
         createdAt: {
           [Op.between]: [start_date, end_date]
+        },
+        internalStatus: {
+          [Op.notIn]: ["pending", "failed"]
         }
       }
     }).then(coupon_order => {
@@ -59,7 +80,10 @@ exports.discountCal = (coupon_id, user_id, cart_id, callback) => {
         Order.count({
           where: {
             couponId: coupon_detail.id,
-            userId: user_id
+            userId: user_id,
+            internalStatus: {
+              [Op.notIn]: ["pending", "failed"]
+            }
           }
         })
           .then(order_count => {
@@ -110,6 +134,8 @@ exports.discountCal = (coupon_id, user_id, cart_id, callback) => {
                       for (i = 0; i < get; i++) {
                         final_discount += cart.cartItems[i].price;
                       }
+                    } else if (type == "flat") {
+                      final_discount = discount;
                     } else {
                       final_discount = 0;
                     }

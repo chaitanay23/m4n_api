@@ -27,6 +27,7 @@ exports.package = (req, res) => {
               attributes: [
                 "id",
                 "name",
+                "display_price",
                 "price",
                 "description",
                 "colors",
@@ -41,7 +42,9 @@ exports.package = (req, res) => {
               .then(package => {
                 if (package.price == 0) {
                   User.findOne({
-                    where: { id: user_id }
+                    where: {
+                      id: user_id
+                    }
                   })
                     .then(user => {
                       if (user.claim_freeNail != 0) {

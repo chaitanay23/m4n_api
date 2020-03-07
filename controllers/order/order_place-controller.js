@@ -30,6 +30,7 @@ exports.listOrder = (req, res) => {
           let net_payable = 0;
           let coupon_msg;
           let user_email = null;
+          var package_list = [];
           if (!(cart_id && address_id)) {
             return res.status(400).json({
               status: "false",
@@ -84,60 +85,83 @@ exports.listOrder = (req, res) => {
                 ]
               })
                 .then(resp => {
-                  const dtdc_charge = delivery_charge.deliveryCharge(
-                    resp.totalPrice,
-                    address.zipcode
-                  );
-                  gst_calculation.tax_amt(resp.totalPrice, package_gst => {
-                    gst_calculation.tax_amt(dtdc_charge, delivery_gst => {
-                      net_payable = resp.totalPrice + dtdc_charge;
-                      const md = new MobileDetect(req.headers["user-agent"]);
-                      let user_agent = md.os() ? md.os() : md.ua;
-
-                      User.update(
-                        { user_agent: user_agent },
-                        { where: { id: user_id } }
-                      )
-                        .then(agent_updated => {
-                          coupon_calulation.discountCal(
-                            coupon_id,
-                            user_id,
-                            cart_id,
-                            response => {
-                              coupon_discount = response.discount;
-                              coupon_msg = response.msg;
-                              net_payable =
-                                resp.totalPrice + dtdc_charge - coupon_discount;
-                              if (coupon_discount > 0) {
-                                coupon_status = true;
-                              } else {
-                                coupon_status = false;
-                              }
-                              return res.status(200).json({
-                                status: "true",
-                                cart: resp,
-                                package_gst: package_gst,
-                                delivery_gst: delivery_gst,
-                                delivery_charge: dtdc_charge,
-                                address: address,
-                                user_email: user_email,
-                                net_payable: net_payable,
-                                coupon_status: coupon_status,
-                                coupon_discount: coupon_discount,
-                                message: coupon_msg
-                              });
-                            }
-                          );
-                        })
-                        .catch(err => {
-                          return res.status(400).json({
-                            status: "false",
-                            error: err,
-                            message: "Failure"
-                          });
-                        });
+                  if (!resp) {
+                    return res.json({
+                      status: "false",
+                      message: "No cart found"
                     });
-                  });
+                  } else {
+                    const dtdc_charge = delivery_charge.deliveryCharge(
+                      resp.totalPrice,
+                      address.zipcode
+                    );
+                    for (i = 0; i < resp.cartItems.length; i++) {
+                      package_list.push(resp.cartItems[i]["packageId"]);
+                    }
+                    gst_calculation.tax_amt(resp.totalPrice, package_gst => {
+                      gst_calculation.tax_amt(dtdc_charge, delivery_gst => {
+                        net_payable = resp.totalPrice + dtdc_charge;
+                        const md = new MobileDetect(req.headers["user-agent"]);
+                        let user_agent = md.os() ? md.os() : md.ua;
+
+                        User.update(
+                          {
+                            user_agent: user_agent
+                          },
+                          {
+                            where: {
+                              id: user_id
+                            }
+                          }
+                        )
+                          .then(agent_updated => {
+                            coupon_calulation.discountCal(
+                              coupon_id,
+                              user_id,
+                              package_list,
+                              cart_id,
+                              response => {
+                                coupon_discount = response.discount;
+                                coupon_msg = response.msg;
+                                if (coupon_discount > net_payable) {
+                                  coupon_discount = net_payable;
+                                }
+                                net_payable =
+                                  resp.totalPrice +
+                                  dtdc_charge -
+                                  coupon_discount;
+
+                                if (coupon_discount > 0) {
+                                  coupon_status = true;
+                                } else {
+                                  coupon_status = false;
+                                }
+                                return res.status(200).json({
+                                  status: "true",
+                                  cart: resp,
+                                  package_gst: package_gst,
+                                  delivery_gst: delivery_gst,
+                                  delivery_charge: dtdc_charge,
+                                  address: address,
+                                  user_email: user_email,
+                                  net_payable: net_payable,
+                                  coupon_status: coupon_status,
+                                  coupon_discount: coupon_discount,
+                                  message: coupon_msg
+                                });
+                              }
+                            );
+                          })
+                          .catch(err => {
+                            return res.status(400).json({
+                              status: "false",
+                              error: err,
+                              message: "Failure"
+                            });
+                          });
+                      });
+                    });
+                  }
                 })
                 .catch(err => {
                   return res.status(400).json({

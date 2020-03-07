@@ -5,6 +5,8 @@ const categorytypeController = require("../controllers-ext/packages/packages");
 router.post("/addPackage", categorytypeController.addPackages);
 router.post("/getPackage", categorytypeController.getSinglePackage);
 router.put("/updatePackage", categorytypeController.updatePackage);
-router.post("/allPackages", categorytypeController.getAllPackges);
+router.get("/allPackages", categorytypeController.getAllPackges);
+router.post("/updateflag", categorytypeController.upDateFlag);
+router.post("/updateCustomize", categorytypeController.upDateCustomize);
 
 module.exports = router;

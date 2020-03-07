@@ -9,7 +9,7 @@ const Preset = sequelize.define("preset", {
     primaryKey: true
   },
   name: Sequelize.STRING,
-  image: Sequelize.STRING,
+  image: { type: Sequelize.STRING, allowNull: false },
   images: Sequelize.TEXT,
   lf1: Sequelize.STRING,
   lf2: Sequelize.STRING,
@@ -20,7 +20,20 @@ const Preset = sequelize.define("preset", {
   rf2: Sequelize.STRING,
   rf3: Sequelize.STRING,
   rf4: Sequelize.STRING,
-  rf5: Sequelize.STRING
+  rf5: Sequelize.STRING,
+  description: {
+    type: Sequelize.STRING,
+
+    defaultValue: ""
+  },
+  hot_selling: {
+    type: Sequelize.INTEGER,
+    defaultValue: 0
+  },
+  new: {
+    type: Sequelize.INTEGER,
+    defaultValue: 1
+  }
 });
 
 module.exports = Preset;

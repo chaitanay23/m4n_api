@@ -1,4 +1,7 @@
 const AdminUser = require("../../models/aduser");
+const FactoryUser = require("../../models/factory-user");
+const CustomerCare = require("../../models/customer-care");
+const Partners = require("../../models/partner");
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 const User = require("../../models/users");
@@ -77,12 +80,44 @@ exports.login = (req, res) => {
 };
 
 exports.getAllUsers = (req, res) => {
-  AdminUser.findAll()
+  AdminUser.findAll({
+    attributes: ["id", "name", "email", "mobileNumber", "username"]
+  })
     .then(users => {
-      res.send(JSON.stringify({ users: users }));
+      res.status(200).json({ users: users });
     })
     .catch(err => {
-      res.send(JSON.stringify({ error: err }));
+      res.status(400).json({ error: err });
+    });
+};
+
+exports.getFactoryUsers = (req, res) => {
+  FactoryUser.findAll({ attributes: ["id", "name", "email", "mobileNumber"] })
+    .then(users => {
+      res.status(200).json({ users: users });
+    })
+    .catch(err => {
+      res.status(400).json({ error: err });
+    });
+};
+
+exports.getCustomerCareUsers = (req, res) => {
+  CustomerCare.findAll({ attributes: ["id", "name", "email", "mobileNumber"] })
+    .then(users => {
+      res.status(200).json({ users: users });
+    })
+    .catch(err => {
+      res.status(400).json({ error: err });
+    });
+};
+
+exports.getPartners = (req, res) => {
+  Partners.findAll({ attributes: ["id", "name", "email", "mobile"] })
+    .then(users => {
+      res.status(200).json({ users: users });
+    })
+    .catch(err => {
+      res.status(400).json({ error: err });
     });
 };
 

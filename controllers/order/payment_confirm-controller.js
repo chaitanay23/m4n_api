@@ -18,6 +18,8 @@ const Address = require("../../models/address");
 const payment_status = ENV.PAYMENT_STATUS;
 const cod_mode = ENV.COD_MODE;
 const cod_min_amt = ENV.COD_MIN_AMT;
+var request = require("request");
+const axios = require("axios");
 
 exports.paymentDetail = (req, res) => {
   redis.authenticateToken(req.headers.authorization, result => {
@@ -125,7 +127,8 @@ exports.paymentDetail = (req, res) => {
                           pending_order.user.mobileNumber
                         );
 
-                        delhivery.assign_waybill
+                        axios
+                          .get(ENV.LOGISTICS_DELHIVERY_GENERATE_WAYBILL)
                           .then(awb_number => {
                             Order.update(
                               {

@@ -1,4 +1,14 @@
 const Order = require("../../models/order");
+const User = require("../../models/users");
+const Address = require("../../models/address");
+const Finger = require("../../models/finger-size");
+const Payment = require("../../models/payment");
+const Cart = require("../../models/cart");
+const Cart_item = require("../../models/cart-item");
+const Package = require("../../models/package");
+const Accessories = require("../../models/accessories");
+const ListItems = require("../../models/list_item");
+const Design = require("../../models/design-image");
 const fs = require("fs");
 const path = require("path");
 const formidable = require("formidable");
@@ -110,4 +120,110 @@ exports.getCurrentOrders = (req, res) => {
         data: response
       });
     });
+};
+
+exports.getAllOrders = (req, res) => {
+  Order.findAll({
+
+    order: [["updatedAt", "DESC"]],
+    attributes: [
+      "id",
+      "reference_id",
+      "netPayable",
+      "status",
+      "internalStatus",
+      "awb_number"
+    ],
+    include: [
+      {
+        model: User
+      }
+    ],
+    order: [["createdAt", "DESC"]]
+  })
+    .then(orders => {
+      res.status(200).json({
+        status: true,
+        orders: orders
+      });
+    })
+    .catch(err => {
+      res.status(400).json({
+        status: false,
+        error: err
+      });
+    });
+};
+
+exports.getSingleOrder = (req, res) => {
+  new formidable.IncomingForm().parse(req, (err, fields, files) => {
+    const id = fields["id"];
+
+    Order.findByPk(id, {
+      attributes: [
+        "id",
+        "userId",
+        "reference_id",
+        "netPayable",
+        "status",
+        "internalStatus",
+        "cartID",
+        "awb_number",
+        "discountAmount",
+        "delivery_charges",
+        "product_gst_tax",
+        "delivery_gst_tax"
+      ],
+      include: [
+        {
+          model: User,
+          attributes: ["name", "email", "mobileNumber"]
+        },
+        {
+          model: Address,
+          attributes: {
+            exclude: ["createdAt", "updatedAt", "userId"]
+          }
+        },
+        {
+          model: Finger,
+          as: "finger"
+        },
+        {
+          model: Payment
+        },
+        {
+          model: Cart,
+          attributes: ["id", "totalPackage", "totalItems"],
+          include: [
+            {
+              model: Cart_item,
+              attributes: ["id", "preview_image"],
+              include: [
+                {
+                  model: Package,
+                  attributes: ["id", "name", "description"]
+                },
+                {
+                  model: Accessories
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    })
+      .then(order => {
+        res.status(200).json({
+          status: true,
+          order: order
+        });
+      })
+      .catch(err => {
+        res.status(400).json({
+          status: false,
+          error: err
+        });
+      });
+  });
 };

@@ -37,7 +37,7 @@ exports.addListitem = (req, res) => {
     }
 
     if (errors.length > 0) {
-      res.send(JSON.stringify(errors));
+      res.status(400).json({ errors: errors, status: false });
     } else {
       Listitem.create({
         brand_imageUrl: brand_image_path,
@@ -50,13 +50,13 @@ exports.addListitem = (req, res) => {
         description: description
       })
         .then(result => {
-          res.json({
+          res.status(200).json({
             mesage: "Listitem added sucessfully ",
             status: true
           });
         })
         .catch(err => {
-          if (err) res.json({ err: err, status: false });
+          if (err) res.status(400).json({ err: err, status: false });
         });
     }
   });
@@ -66,7 +66,7 @@ exports.addListitem = (req, res) => {
     console.log(isBrand);
     if (image.type == "image/jpeg" || "image/png") {
       if (errors.length > 0) {
-        res.send(JSON.stringify(errors));
+        res.status(400).json({ status: false, errors: errors });
       }
       let extension = path.extname(image.name);
       let oldpath = image.path;
@@ -95,18 +95,18 @@ exports.getSingleItem = (req, res) => {
     if (id == "" || id == null || id == undefined) errors.push("Provide id");
     console.log(id);
     if (errors.length > 0) {
-      res.json({ errors: errors, status: false });
+      res.status(400).json({ errors: errors, status: false });
     } else {
       Listitem.findByPk(id)
         .then(result => {
           if (result) {
-            res.json({ status: true, result: result });
+            res.status(200).json({ status: true, result: result });
           } else {
-            res.json({ status: false, result: "No Data Found" });
+            res.status(400).json({ status: false, result: "No Data Found" });
           }
         })
         .catch(err => {
-          res.json({ status: false, error: err });
+          res.status(400).json({ status: false, error: err });
         });
     }
   });
@@ -131,6 +131,7 @@ exports.updateProduct = (req, res) => {
     if (item_code == null || item_code == "") errors.push("item_code Required");
     if (finger_limit == null || finger_limit == "")
       errors.push("Finger limit Required");
+
     if (files["image_url"]) {
       var image_url_path = image(files["image_url"], title, false);
       console.log(image_url_path);
@@ -139,22 +140,9 @@ exports.updateProduct = (req, res) => {
       var brand_image_path = image(files["brand_image"], title, true);
       console.log(brand_image_path);
     }
-    // if (!files["image_url"] ) {
-    //   errors.push("Image Required");
-    // } else {
-    //   if (files["image_url"]) {
-    //     var image_url_path = image(files["image_url"], title, false);
-    //     console.log(image_url_path);
-    //   }
-
-    //   if (files["brand_image"]) {
-    //     var brand_image_path = image(files["brand_image"], title, true);
-    //     console.log(brand_image_path);
-    //   }
-    // }
 
     if (errors.length > 0) {
-      res.send(JSON.stringify(errors));
+      res.status(400).json({ status: false, errors: errors });
     } else {
       Listitem.update(
         {
@@ -174,13 +162,13 @@ exports.updateProduct = (req, res) => {
         }
       )
         .then(result => {
-          res.json({
+          res.status(200).json({
             mesage: "item updated sucessfully ",
             status: true
           });
         })
         .catch(err => {
-          if (err) res.json({ status: false });
+          if (err) res.status(400).json({ status: false, errors: err });
         });
     }
   });
@@ -190,7 +178,7 @@ exports.updateProduct = (req, res) => {
     console.log(isBrand);
     if (image.type == "image/jpeg" || "image/png") {
       if (errors.length > 0) {
-        res.send(JSON.stringify(errors));
+        res.status(400).json({ status: false, errors: errors });
       }
       let extension = path.extname(image.name);
       let oldpath = image.path;
@@ -213,10 +201,10 @@ exports.updateProduct = (req, res) => {
 exports.getCount = (req, res) => {
   Listitem.count()
     .then(count => {
-      res.status(200).json({ count: count });
+      res.status(200).json({ status: true, count: count });
     })
     .catch(err => {
-      res.status(400).json({ error: err });
+      res.status(400).json({ status: false, error: err });
     });
 };
 
@@ -226,21 +214,22 @@ exports.itemsByType = (req, res) => {
     if (err) console.log(err);
 
     const type = fields["type"];
-    console.log(type);
-    process.exit();
-
     if (type == "" || type == null) errors.push("Provide type");
     if (errors.length > 0) {
       res.json(errors);
     } else {
-      Listitem.findAll().then(items => {
-        res.json({ items: items });
+      Listitem.findAll({
+        where: { type: type },
+        order: [["updatedAt", "DESC"]],
+        attributes: ["id", "title", "imageUrl", "item_code"]
+      }).then(items => {
+        res.status(200).json({ status: true, items: items });
       });
     }
   });
 };
 exports.getItems = (req, res) => {
-  Listitem.findAll()
+  Listitem.findAll({ order: [["updatedAt", "DESC"]] })
     .then(items => {
       res.status(200).json({ items: items, status: true });
     })

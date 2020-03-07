@@ -24,11 +24,18 @@ exports.preset_list = (req, res) => {
             where: {
               packageId: package_id
             },
-            attributes: ["name", "image", "id", "packageId"],
+            attributes: [
+              "name",
+              "image",
+              "id",
+              "packageId",
+              "hot_selling",
+              "new"
+            ],
             include: [
               {
                 model: Package,
-                attributes: ["price", "id"]
+                attributes: ["price", "display_price", "id"]
               }
             ]
           })

@@ -6,6 +6,7 @@ exports.getPackages = (_, res) => {
       "id",
       "name",
       "imageUrl",
+      "display_price",
       "price",
       "offer",
       "cta_text",

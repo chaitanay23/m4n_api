@@ -23,6 +23,7 @@ exports.COD_AMT = 0;
 exports.RETURN_ADDRESS = "Uttar Pardesh";
 exports.RETURN_PIN = 201301;
 exports.SELLER_NAME = "BeSmarty Technologies Pvt. Ltd.";
+exports.SELLER_ADDRESS = "J-43,SECTOR -63,NOIDA, U.P,201301";
 exports.HSN = 3926099;
 exports.LOGISTICS_DELHIVERY_PINCODE = `${delhivery_production_url}/c/api/pin-codes/json/?token=${prod_token}&filter_codes=`;
 exports.LOGISTICS_DELHIVERY_TRACK_ORDER = `${delhivery_production_url}/api/v1/packages/json/?token=${prod_token}&verbose=0&waybill=`;

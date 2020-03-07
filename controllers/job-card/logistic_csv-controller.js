@@ -16,10 +16,12 @@ const country_env = ENV.COUNTRY;
 var payment_mode_env = ENV.PAYMENT_MODE;
 var cod_env = ENV.COD_AMT;
 const return_add_env = ENV.RETURN_ADDRESS;
+const seller_address = ENV.SELLER_ADDRESS;
 const return_pin_env = ENV.RETURN_PIN;
 const seller_name_env = ENV.SELLER_NAME;
 const hsn_env = ENV.HSN;
 const cod_mode = ENV.COD_MODE;
+var complete_address = "";
 
 exports.generate_csv = (req, res) => {
   redis.authenticateToken(req.headers.authorization, result => {
@@ -97,6 +99,8 @@ exports.generate_csv = (req, res) => {
                   cod_env = ENV.COD_AMT;
                   payment_mode_env = ENV.PAYMENT_MODE;
                 }
+                complete_address =
+                  order.address.address + ", " + order.address.area;
                 record.push([
                   order.awb_number, // awb
                   order.reference_id, // ref_no
@@ -104,7 +108,7 @@ exports.generate_csv = (req, res) => {
                   order.address.city, // city
                   order.address.state, // state
                   country_env, // country
-                  order.address.address, // add
+                  complete_address, // address
                   order.address.zipcode, // pincode
                   null, // phone
                   order.address.mobile, // mobile
@@ -116,7 +120,7 @@ exports.generate_csv = (req, res) => {
                   return_add_env, // return_address
                   return_pin_env, // return_pin
                   seller_name_env, // seller_name
-                  null, // seller_add
+                  seller_address, // seller_add
                   null, // seller_cst
                   null, // seller_tin
                   null, // invoice

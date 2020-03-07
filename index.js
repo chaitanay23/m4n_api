@@ -44,7 +44,6 @@ app.use(cors());
 
 const bodyParser = require("body-parser");
 const session = require("express-session");
-const multer = require("multer");
 
 const errorController = require("./controllers/error");
 const user = require("./models/users");
@@ -64,7 +63,7 @@ const kioskUser = require("./models/kioskUser");
 const coupon = require("./models/coupon");
 const homePage = require("./models/homepage");
 const screenId = require("./models/screen_id");
-
+const version = require("./models/version");
 const gstTax = require("./models/gsttax");
 const videoLink = require("./models/video-link");
 const wishlist = require("./models/wishlist");
@@ -75,6 +74,7 @@ const awbNumber = require("./models/awb_number");
 const package = require("./models/package");
 const preset = require("./models/preset");
 const accessories = require("./models/accessories");
+const couponPackage = require("./models/couponPackage");
 
 /* Models Import and Association for Partner Portal */
 const state = require("./models/state");
@@ -85,6 +85,13 @@ const commission = require("./models/partner_commission");
 
 partner.hasMany(commission);
 package.hasMany(commission);
+
+package.belongsToMany(coupon, {
+  through: couponPackage
+});
+coupon.belongsToMany(package, {
+  through: couponPackage
+});
 
 order.hasMany(sale);
 partner.hasMany(sale);
@@ -113,12 +120,13 @@ const orderRoute = require("./routes/order");
 const jobRoute = require("./routes/job-card");
 const kioskRoute = require("./routes/kiosk");
 const homePageRoute = require("./routes/homepage");
-const discountCoupon = require("./models/discountCoupon");
+const versionRoute = require("./routes/version");
 
 /* Only for candy ext */
 const candyextListItemRoute = require("./routes-ext/listItem");
 const candyextadmin_user = require("./routes-ext/adminUser");
 const candyextPackage = require("./routes-ext/package");
+const candyPreset = require("./routes-ext/preset");
 const candyOrder = require("./routes-ext/order");
 
 //route to handle login and registration  onboarding
@@ -156,12 +164,14 @@ app.use("/track", track_order);
 app.use("/logistic", delhivery);
 app.use("/package", packageRoute);
 app.use("/preset", presetRoute);
+app.use("/version", versionRoute);
 app.use("/homePage", homePageRoute, express.static("homepage"));
 
 /*For Extranet */
 app.use("/ext/listitem", candyextListItemRoute, express.static("images"));
 app.use("/ext/admin_user", candyextadmin_user);
 app.use("/ext/package", candyextPackage);
+app.use("/ext/preset", candyPreset);
 app.use("/ext/order", candyOrder);
 
 //extranet use

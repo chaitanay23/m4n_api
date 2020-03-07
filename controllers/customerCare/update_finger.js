@@ -34,20 +34,22 @@ exports.update_size = (req, res) => {
 
           if (user_id) {
             if (
-              lf1 &&
-              lf2 &&
-              lf3 &&
-              lf4 &&
-              lf5 &&
-              rf1 &&
-              rf2 &&
-              rf3 &&
-              rf4 &&
-              rf5 &&
+              (lf1 ||
+                lf2 ||
+                lf3 ||
+                lf4 ||
+                lf5 ||
+                rf1 ||
+                rf2 ||
+                rf3 ||
+                rf4 ||
+                rf5) &&
               comment
             ) {
               Finger.findOne({
-                where: { userId: user_id }
+                where: {
+                  userId: user_id
+                }
               })
                 .then(old_finger => {
                   if (!old_finger) {

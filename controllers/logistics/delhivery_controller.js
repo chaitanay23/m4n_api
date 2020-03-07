@@ -1,11 +1,8 @@
 const formidable = require("formidable");
 const request = require("request");
 const Order = require("../../models/order");
-const axios = require("axios");
 const Address = require("../../models/address");
 const delhivery = require("../../delhivery/assign_wayBill");
-const fetch = require("node-fetch");
-const rp = require("request-promise");
 const jwt = require("../jwt");
 const redis = require("../redis");
 const ENV = require("../../env");
@@ -19,14 +16,22 @@ exports.is_Serviceable = (req, res) => {
         new formidable.IncomingForm().parse(req, (err, fields, files) => {
           if (err) throw err;
 
-          var address_id = fields["address_id"];
+          var address_id = fields["address_id"] ? fields["address_id"] : null;
+          const pin_check = fields["pincode"];
+          let pincode;
+
           Address.findOne({
             where: {
               id: address_id
             }
           })
             .then(address => {
-              let pincode = address.zipcode;
+              if (address) {
+                pincode = address.zipcode;
+              } else {
+                pincode = pin_check;
+              }
+
               let url = ENV.LOGISTICS_DELHIVERY_PINCODE;
               request(
                 url + pincode,

@@ -34,7 +34,14 @@ exports.set_detail = (req, res) => {
               include: [
                 {
                   model: Package,
-                  attributes: ["id", "name", "price", "description"]
+                  attributes: [
+                    "id",
+                    "name",
+                    "display_price",
+                    "price",
+                    "description",
+                    "isCustomizable"
+                  ]
                 }
               ]
             })
