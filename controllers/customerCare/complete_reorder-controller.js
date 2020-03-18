@@ -11,6 +11,7 @@ const ENV = require("../../env");
 const prefix = ENV.PREFIX;
 const ref_gen = require("../reference-creator");
 const Design = require("../../models/design-image");
+const axios = require("axios");
 
 exports.full_reorder = (req, res) => {
   redis.authenticateToken(req.headers.authorization, result => {
@@ -181,7 +182,8 @@ exports.full_reorder = (req, res) => {
                           // let raw_query = "select gen_awb(?) as awb";
                           ref_gen.reference(ref_id => {
                             let reference_id = ref_id;
-                            delhivery.assign_waybill
+                            axios
+                            .get(ENV.LOGISTICS_DELHIVERY_GENERATE_WAYBILL)
                               .then(awb_number => {
                                 Order.create({
                                   reference_id,
@@ -199,6 +201,7 @@ exports.full_reorder = (req, res) => {
                                   addressId: order.addressId,
                                   cartId: new_cart.id,
                                   fingerSizeId: order.fingerSizeId,
+                                  paymentId:order.paymentId,
                                   orderId: order_id
                                 })
                                   .then(new_reorder => {

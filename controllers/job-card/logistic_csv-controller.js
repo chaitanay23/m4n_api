@@ -39,6 +39,8 @@ exports.generate_csv = (req, res) => {
           }
           var datetime = Date.now();
           let record = [];
+          //as discussed over call on 12th march with factory
+          let package_qty = 1;
           let columns = {
             awb: "Waybill",
             ref_no: "Reference No",
@@ -125,7 +127,7 @@ exports.generate_csv = (req, res) => {
                   null, // seller_tin
                   null, // invoice
                   null, // invoice_date
-                  order.totalQuantity, // qty
+                  package_qty,//order.totalQuantity, // qty
                   null, // commodity
                   null, // tax
                   null, // category
