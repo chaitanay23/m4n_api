@@ -28,7 +28,7 @@
     "form-data": "^2.3.3",
     "formidable": "^1.2.1",
     "fs": "0.0.1-security",
-    "html-pdf": "^2.2.0",
+    "html-pdf": "^3.0.1",
     "image-size": "^0.7.4",
     "jsonwebtoken": "^7.4.3",
     "mobile-detect": "^1.4.4",
